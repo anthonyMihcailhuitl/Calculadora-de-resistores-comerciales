@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de resistores comerciales</title>
+<link rel = "icon" type = "image/png" href = "07 IA Void (Ícono).png">
+<style>
+  * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
+  body { background: linear-gradient(145deg,#f6f9fc,#e9eef4); min-height:100vh; margin:0;
+         display:flex; justify-content:center; align-items:flex-start; padding:1.5rem; }
+  .card { background:#ffffffdd; backdrop-filter:blur(10px); border-radius:2rem; padding:2rem;
+          max-width:1200px; width:100%; box-shadow:0 25px 45px -12px #00141e59; }
+  h1 { font-size:1.7rem; color:#0b2b3b; margin:0 0 .3rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;}
+  h1 span { background:#0b2b3b; color:#fff; font-size:.85rem; padding:.2rem .8rem; border-radius:100px; font-weight:400;}
+  .subhead { color:#2c4b5e; margin:0 0 1.5rem; border-left:4px solid #3b8fc2; padding-left:1rem; }
+  .input-panel { display:flex; flex-wrap:wrap; gap:1.2rem; align-items:flex-end;
+                 background:#fff; padding:1.3rem 1.5rem; border-radius:1.5rem;
+                 box-shadow:0 8px 18px -8px #0000001a; margin-bottom:1.5rem; }
+  .input-group { display:flex; flex-direction:column; gap:.35rem; flex:1 1 170px; }
+  .input-group label { font-size:.75rem; text-transform:uppercase; letter-spacing:.5px;
+                       font-weight:600; color:#1e4b61; }
+  .input-group input, .input-group select {
+      padding:.7rem 1rem; border-radius:2rem; border:1.5px solid #cbdae5;
+      background:#fff; font-size:1rem; color:#102b38; outline:none; font-family:inherit;
+      transition:.15s;
+  }
+  .input-group input:focus, .input-group select:focus {
+      border-color:#1e7aa8; box-shadow:0 0 0 4px #1e7aa826;
+  }
+  .radio-group { display:flex; gap:.8rem; align-items:center; padding-bottom:.35rem; }
+  .radio-group label { font-size:.8rem; color:#1e4b61; font-weight:600;
+                       display:flex; align-items:center; gap:.3rem; cursor:pointer; }
+  .radio-group input[type="radio"] { accent-color:#134b63; width:1rem; height:1rem; cursor:pointer; }
+  button { background:#134b63; color:#fff; border:none; font-weight:600; font-size:1rem;
+           padding:.8rem 2rem; border-radius:3rem; cursor:pointer; transition:.2s;
+           box-shadow:0 8px 18px -6px #134b6350; }
+  button:hover:not(:disabled) { background:#1a6280; transform:scale(1.02); }
+  button:active:not(:disabled) { transform:scale(.98); }
+  button:disabled { opacity:.55; cursor:wait; }
+  .result-area { background:#f3f8fe; border-radius:1.5rem; padding:1.2rem 1.5rem 1.5rem;
+                 border:1px solid #c9dde9; min-height:120px; }
+  .progress-wrap { padding:1rem .5rem; }
+  .progress-label { display:flex; justify-content:space-between; font-size:.82rem;
+                    color:#1e5a74; margin-bottom:.4rem; font-weight:500; }
+  .progress-track { background:#d9e6f0; border-radius:100px; height:14px; overflow:hidden;
+                    box-shadow:inset 0 1px 3px #00000015; }
+  .progress-fill { height:100%; width:0%; border-radius:100px;
+                   background:linear-gradient(90deg,#3b8fc2,#134b63);
+                   transition:width .08s linear; }
+  .best-match { display:flex; justify-content:space-between; align-items:center;
+                flex-wrap:wrap; gap:1rem; margin-bottom:1rem; padding-bottom:.8rem;
+                border-bottom:2px dashed #b6d0e0; }
+  .best-value { font-size:1.9rem; font-weight:700; color:#0a3e53; }
+  .best-value small { font-size:.95rem; color:#2f6179; margin-left:.3rem; font-weight:500;}
+  .accuracy { font-size:1rem; font-weight:700; padding:.2rem .85rem; border-radius:30px;
+              display:inline-block; margin-top:.35rem; }
+  .accuracy.high { background:#e3f5e3; color:#1e6b1e; }
+  .accuracy.mid  { background:#fff6e0; color:#8a5a10; }
+  .accuracy.low  { background:#ffe9e3; color:#a1401e; }
+  .variation-mini { font-size:.78rem; color:#5f7f91; margin-top:.25rem; }
+  .badge { background:#134b63; color:#fff; padding:.35rem 1rem; border-radius:100px; font-size:.85rem;}
+  .error-msg { color:#b13e3e; background:#ffe5e5; padding:.8rem 1.5rem;
+               border-radius:1.5rem; font-weight:500; }
+  .combo-grid { border-radius:1rem; background:#fff; box-shadow:inset 0 0 0 1px #d9e6f0;
+                overflow:hidden; }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  th { background:#e3eff8; color:#0b3f55; font-weight:600; font-size:.75rem;
+       text-transform:uppercase; padding:.7rem .5rem; }
+  td { padding:.6rem .5rem; border-bottom:1px solid #e3eef8; text-align:center; color:#1c3e4e;}
+  tr.row-opt { cursor:pointer; transition:background .12s; }
+  tr.row-opt:hover td { background:#f0f8ff; }
+  tr.row-best td { background:#eaf5fd; }
+  tr.row-selected td { background:#cfe8fb !important; box-shadow:inset 0 0 0 2px #3b8fc2; }
+  tr.row-best.row-selected td { background:#cfe8fb !important; }
+  .res-value { font-family:monospace; font-weight:600; color:#124f6b; }
+  .acc-cell { font-weight:700; }
+  .acc-high { color:#1e6b1e; } .acc-mid { color:#8a5a10; } .acc-low { color:#a1401e; }
+  .hint-click { font-size:.75rem; color:#476f85; margin:.5rem 0 .35rem; }
+  .diagram-section { margin-top:1.5rem; padding-top:1rem; border-top:2px solid #c9dde9;}
+  .diagram-title { font-size:1.1rem; font-weight:600; color:#0a3e53; margin-bottom:.7rem;
+                   display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem;}
+  .diagram-title .diagram-sub { font-size:.78rem; font-weight:400; color:#476f85; }
+  .diagram-container { display:flex; flex-wrap:wrap; gap:1.5rem; background:#ffffffdd;
+                       padding:1.3rem; border-radius:1.5rem; border:1px solid #d0e2ef; }
+  .diagram-box { flex:1 1 280px; display:flex; flex-direction:column;
+                 align-items:center; gap:.5rem; }
+  .diagram-box h4 { margin:0; font-size:.85rem; color:#1e5a74;
+                    text-transform:uppercase; letter-spacing:.4px;}
+  .network-svg { width:100%; max-width:340px; background:#fbfdff;
+                 border-radius:10px; border:1px solid #d0e2ef; padding:.3rem;}
+  .color-code-list { display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-size:.8rem;
+                     background:#f0f7fd; padding:.5rem 1rem; border-radius:2rem;
+                     justify-content:center; }
+  .color-code-list span { display:inline-flex; align-items:center; gap:.35rem; }
+  .color-dot { width:13px; height:13px; border-radius:50%;
+               border:1px solid #88888830; display:inline-block; }
+  .footer-note { font-size:.72rem; color:#5f7f91; margin-top:.8rem; text-align:right;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔧 Resistencia comercial <span>1–3 resistencias</span></h1>
+  <div class="subhead">Precisión del ajuste · diagrama interactivo por opción</div>
+
+  <div class="input-panel">
+    <div class="input-group">
+      <label>Resistencia deseada (Ω)</label>
+      <input type="number" id="targetInput" value="1570" step="any" min="0.001">
+    </div>
+    <div class="input-group">
+      <label>Tolerancia comercial</label>
+      <select id="toleranceSelect">
+        <option value="10">10 % (E12)</option>
+        <option value="1" selected>1 % (E96)</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Nº máximo de resistencias</label>
+      <div class="radio-group">
+        <label><input type="radio" name="maxRes" value="1"> 1</label>
+        <label><input type="radio" name="maxRes" value="2"> 2</label>
+        <label><input type="radio" name="maxRes" value="3" checked> 3</label>
+      </div>
+    </div>
+    <button id="calculateBtn">⚡ Calcular</button>
+  </div>
+
+  <div class="result-area" id="resultArea">
+    <div style="color:#2f6179; padding:.5rem; text-align:center;">
+      Ingresa un valor y presiona Calcular
+    </div>
+  </div>
+  <div class="footer-note">* Combinaciones usando 1, 2 o 3 resistencias en serie/paralelo.</div>
+</div>
+
+<script>
+(function () {
+  // ---------- valores comerciales ----------
+  const E12 = [1.0,1.2,1.5,1.8,2.2,2.7,3.3,3.9,4.7,5.6,6.8,8.2];
+  const E96 = [
+    1.00,1.02,1.05,1.07,1.10,1.13,1.15,1.18,1.21,1.24,1.27,1.30,1.33,1.37,1.40,1.43,
+    1.47,1.50,1.54,1.58,1.62,1.65,1.69,1.74,1.78,1.82,1.87,1.91,1.96,2.00,2.05,2.10,
+    2.15,2.21,2.26,2.32,2.37,2.43,2.49,2.55,2.61,2.67,2.74,2.80,2.87,2.94,3.01,3.09,
+    3.16,3.24,3.32,3.40,3.48,3.57,3.65,3.74,3.83,3.92,4.02,4.12,4.22,4.32,4.42,4.53,
+    4.64,4.75,4.87,4.99,5.11,5.23,5.36,5.49,5.62,5.76,5.90,6.04,6.19,6.34,6.49,6.65,
+    6.81,6.98,7.15,7.32,7.50,7.68,7.87,8.06,8.25,8.45,8.66,8.87,9.09,9.31,9.53,9.76
+  ];
+
+  function buildPool(tol, target) {
+    const base = tol === 10 ? E12 : E96;
+    const lo = target / 4, hi = target * 4;
+    const out = [];
+    for (let e = -2; e <= 6; e++) {
+      const f = Math.pow(10, e);
+      for (const v of base) {
+        const val = Math.round(v * f * 1e6) / 1e6;
+        if (val >= lo && val <= hi) out.push(val);
+      }
+    }
+    return out;
+  }
+
+  const par = (a, b) => (a * b) / (a + b);
+  const fmt = v => {
+    if (v >= 1e6) return (v/1e6).toFixed(2).replace(/\.?0+$/,'') + ' MΩ';
+    if (v >= 1e3) return (v/1e3).toFixed(2).replace(/\.?0+$/,'') + ' kΩ';
+    return v.toFixed(2).replace(/\.?0+$/,'') + ' Ω';
+  };
+
+  function TopK(k) { this.k = k; this.arr = []; }
+  TopK.prototype.offer = function (item, target) {
+    const diff = Math.abs(item.eq - target);
+    item._diff = diff;
+    const arr = this.arr;
+    if (arr.length < this.k) { arr.push(item); arr.sort((a,b)=>b._diff-a._diff); }
+    else if (diff < arr[0]._diff) { arr[0] = item; arr.sort((a,b)=>b._diff-a._diff); }
+  };
+  TopK.prototype.list = function () {
+    return this.arr.slice().sort((a,b)=>a._diff-b._diff);
+  };
+
+  function describe(R, type) {
+    if (R.length === 1) return fmt(R[0]);
+    if (R.length === 2) return type === 'serie'
+      ? `${fmt(R[0])} + ${fmt(R[1])}`
+      : `${fmt(R[0])} ∥ ${fmt(R[1])}`;
+    const [a,b,c] = R.map(fmt);
+    switch (type) {
+      case 'serie':    return `${a} + ${b} + ${c}`;
+      case 'paralelo': return `${a} ∥ ${b} ∥ ${c}`;
+      default:         return `${a} ‖ ${b} + ${c} (híbrido)`;
+    }
+  }
+
+  // ---------- búsqueda chunked ----------
+  function searchChunked(pool, target, maxR, onProgress, done) {
+    const n = pool.length;
+    const top = new TopK(20);
+    let best = null, bestDiff = Infinity;
+
+    const offer = (eq, resistors, type) => {
+      if (!(eq > 0) || !isFinite(eq)) return;
+      const diff = Math.abs(eq - target);
+      if (diff < bestDiff - 1e-12) {
+        bestDiff = diff;
+        best = { eq, resistors, type, count: resistors.length,
+                 desc: describe(resistors, type) };
+      } else if (Math.abs(diff - bestDiff) <= 1e-12 && best && resistors.length < best.count) {
+        best = { eq, resistors, type, count: resistors.length,
+                 desc: describe(resistors, type) };
+      }
+      top.offer({ eq, resistors, type, count: resistors.length,
+                  desc: describe(resistors, type) }, target);
+    };
+
+    const totalTriples = (maxR >= 3) ? (n*(n+1)*(n+2))/6 : (n*(n+1))/2;
+    let doneUnits = 0;
+    let i = 0, j = 0, k = 0;
+    let started = false;
+    const BUDGET = 15000;
+
+    function work() {
+      let ops = 0;
+      while (ops < BUDGET) {
+        if (!started) { i = 0; j = 0; k = 0; started = true; }
+
+        const a = pool[i], b = pool[j];
+        const sab = a + b, pab = par(a, b);
+
+        if (i === 0 && j === 0 && k === 0) {
+          if (maxR >= 1) for (let idx = 0; idx < n; idx++) offer(pool[idx], [pool[idx]], 'simple');
+        }
+        if (k === 0 && maxR >= 2) {
+          offer(a + b, [a, b], 'serie');
+          offer(pab,   [a, b], 'paralelo');
+        }
+        if (maxR >= 3) {
+          const c = pool[k];
+          offer(a + b + c,        [a,b,c], 'serie');
+          offer(1/(1/a+1/b+1/c),  [a,b,c], 'paralelo');
+          offer(pab + c,          [a,b,c], 'híbrido');
+          offer(a + par(b, c),    [a,b,c], 'híbrido');
+          offer(par(sab, c),      [a,b,c], 'híbrido');
+          offer(par(a, b + c),    [a,b,c], 'híbrido');
+        }
+        ops++; doneUnits++;
+
+        if (maxR >= 3) {
+          k++;
+          if (k >= n) {
+            j++;
+            if (j >= n) {
+              i++;
+              if (i >= n) { onProgress(1); done({ best, top: top.list() }); return; }
+              j = i;
+            }
+            k = j;
+          }
+        } else {
+          j++;
+          if (j >= n) {
+            i++;
+            if (i >= n) { onProgress(1); done({ best, top: top.list() }); return; }
+            j = i;
+          }
+        }
+      }
+      onProgress(Math.min(1, doneUnits / totalTriples));
+      requestAnimationFrame(work);
+    }
+    requestAnimationFrame(work);
+  }
+
+  // ---------- código de colores ----------
+  const COLORS = [
+    ['Negro',0,'#1e1e1e'], ['Marrón',1,'#8B4513'], ['Rojo',2,'#DC143C'],
+    ['Naranja',3,'#FF8C00'], ['Amarillo',4,'#FFD700'], ['Verde',5,'#228B22'],
+    ['Azul',6,'#1E90FF'], ['Violeta',7,'#8A2BE2'], ['Gris',8,'#808080'],
+    ['Blanco',9,'#F0F0F0']
+  ];
+  const TOL_COL = {
+  	10: ['Plata',   null, '#C0C0C0'],
+  	5:  ['Oro',     null, '#FFD700'],
+  	1:  ['Marrón',  null, '#8B4513']
+};
+
+  function bandsFor(r, tol) {
+    let v = r, e = 0;
+    while (v >= 100) { v /= 10; e++; }
+    while (v < 10)  { v *= 10; e--; }
+    let d1 = Math.floor(v/10), d2 = Math.round(v%10);
+    if (d2 >= 10) { d1++; d2 = 0; }
+    const c1 = COLORS[Math.min(d1,9)], c2 = COLORS[Math.min(d2,9)];
+    const c3 = COLORS[e >= 0 && e <= 9 ? e : 0];
+    const t  = TOL_COL[tol] || TOL_COL[1];
+    return [c1, c2, c3, t];
+  }
+
+  // ---------- SVG resistencia (cuerpo más ancho, 4 bandas visibles) ----------
+  function resistorSVG(bands) {
+    // Cuerpo: x=28, ancho=114, y=12, alto=26  -> vista 170x50
+    const bx = 28, bw = 114, by = 12, bh = 26;
+    let s = `<svg viewBox="0 0 170 50" style="width:100%;max-width:170px;">`;
+    // patillas
+    s += `<line x1="0" y1="25" x2="${bx}" y2="25" stroke="#888" stroke-width="3" stroke-linecap="round"/>`;
+    s += `<line x1="${bx+bw}" y1="25" x2="170" y2="25" stroke="#888" stroke-width="3" stroke-linecap="round"/>`;
+    // cuerpo
+    s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="8" fill="#E8D8B0" stroke="#B8A070" stroke-width="1.5"/>`;
+    // 3 bandas de valor (estrechas) + 1 banda de tolerancia (más ancha, separada)
+    const wVal = 12, wTol = 16;
+    const posVal = [bx + 16, bx + 34, bx + 52];   // 44, 62, 80
+    const posTol = bx + 82;                        // 110 -> queda dentro del cuerpo (bx+bw=142)
+    bands.forEach((c, i) => {
+      if (i < 3) {
+        s += `<rect x="${posVal[i]}" y="${by-1}" width="${wVal}" height="${bh+2}" fill="${c[2]}" stroke="#00000020" stroke-width="0.5"/>`;
+      } else {
+        s += `<rect x="${posTol}" y="${by-1}" width="${wTol}" height="${bh+2}" fill="${c[2]}" stroke="#00000030" stroke-width="0.7"/>`;
+      }
+    });
+    return s + `</svg>`;
+  }
+
+  function networkSVG(combo) {
+    const R = combo.resistors, n = combo.count;
+    let s = `<svg viewBox="0 0 340 120" style="width:100%;">`;
+    const box = (x,y) => `<rect x="${x}" y="${y}" width="70" height="18" rx="5" fill="#E8D8B0" stroke="#B8A070" stroke-width="1.5"/>`;
+    const wire = (x1,y1,x2,y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>`;
+
+    if (n === 1) {
+      s += wire(60,55,120,55) + box(120,46) + wire(190,55,250,55);
+    } else if (combo.type === 'serie' && n === 2) {
+      s += wire(30,55,60,55) + box(60,46) + wire(130,55,160,55) + box(160,46) + wire(230,55,270,55);
+    } else if (combo.type === 'paralelo' && n === 2) {
+      s += wire(40,40,70,40) + wire(40,80,70,80) + wire(40,40,40,80);
+      s += box(70,31) + box(70,71);
+      s += wire(140,40,170,40) + wire(140,80,170,80) + wire(170,40,170,80) + wire(170,60,200,60);
+    } else if (combo.type === 'serie') {
+      s += wire(20,55,40,55) + box(40,46) + wire(110,55,130,55) + box(130,46) + wire(200,55,220,55) + box(220,46) + wire(290,55,310,55);
+    } else if (combo.type === 'paralelo') {
+      s += wire(50,35,80,35) + wire(50,60,80,60) + wire(50,85,80,85) + wire(50,35,50,85);
+      s += box(80,26) + box(80,51) + box(80,76);
+      s += wire(150,35,180,35) + wire(150,60,180,60) + wire(150,85,180,85) + wire(180,35,180,85) + wire(180,60,210,60);
+    } else {
+      s += wire(20,55,40,55);
+      s += wire(40,40,60,40) + wire(40,70,60,70) + wire(40,40,40,70);
+      s += box(60,31) + box(60,61);
+      s += wire(130,40,160,40) + wire(130,70,160,70) + wire(160,40,160,70) + wire(160,55,180,55);
+      s += box(180,46) + wire(250,55,290,55);
+    }
+    s += `<text x="170" y="108" text-anchor="middle" fill="#0a3e53" font-size="11" font-weight="500">${combo.desc}</text>`;
+    return s + `</svg>`;
+  }
+
+  // ---------- precisión ----------
+  function accuracyOf(eq, target) {
+    const pct = Math.abs((eq - target) / target) * 100;
+    return Math.max(0, 100 - pct);
+  }
+  function accuracyClass(acc) {
+    if (acc >= 99) return 'high';
+    if (acc >= 95) return 'mid';
+    return 'low';
+  }
+  function accCellClass(acc) {
+    if (acc >= 99) return 'acc-high';
+    if (acc >= 95) return 'acc-mid';
+    return 'acc-low';
+  }
+
+  // ---------- estado de la UI ----------
+  let state = { target: 0, tol: 1, top: [], best: null, selected: null };
+
+  // ---------- render de la tabla + diagrama ----------
+  function renderMain() {
+    const area = document.getElementById('resultArea');
+    const { best, top, target, tol, selected } = state;
+    const acc = accuracyOf(best.eq, target);
+    const accCls = accuracyClass(acc);
+    const signedPct = ((best.eq - target) / target) * 100;
+    const vSign = signedPct >= 0 ? '+' : '−';
+
+    // Cabecera
+    let html = `
+      <div class="best-match">
+        <div>
+          <div class="best-value">${fmt(best.eq)} <small>(${best.eq.toFixed(4)} Ω)</small></div>
+          <div style="margin-top:5px;color:#2b5f78;font-size:.9rem;">
+            Mejor combinación: <strong>${best.desc}</strong>
+          </div>
+          <div class="accuracy ${accCls}">Precisión: ${acc.toFixed(3)} %</div>
+          <div class="variation-mini">Desviación firmada: ${vSign}${Math.abs(signedPct).toFixed(3)} % (${signedPct >= 0 ? 'por encima' : 'por debajo'} del valor pedido)</div>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge">${best.count} resistencia${best.count>1?'s':''}</span>
+          <div style="font-size:.78rem;margin-top:7px;background:#d9e6f0;display:inline-block;
+                      padding:.1rem .7rem;border-radius:30px;">tolerancia ${tol}%</div>
+        </div>
+      </div>`;
+
+    // Tabla (top 5)
+    const five = top.slice(0, 5);
+    html += `<div class="hint-click">👉 Haz clic en cualquier opción para ver su diagrama abajo.</div>`;
+    html += `<div class="combo-grid"><table><thead><tr>
+               <th>#</th><th>Valor</th><th>Combinación</th><th>Nº</th><th>Tipo</th><th>Precisión</th>
+             </tr></thead><tbody>`;
+    five.forEach((c, i) => {
+      const a = accuracyOf(c.eq, target);
+      const isBest = c === best;
+      const isSel = selected && c.eq === selected.eq && c.desc === selected.desc;
+      const cls = ['row-opt', isBest ? 'row-best' : '', isSel ? 'row-selected' : ''].filter(Boolean).join(' ');
+      html += `<tr class="${cls}" data-idx="${i}">
+                 <td>${i+1}</td>
+                 <td class="res-value">${fmt(c.eq)}</td>
+                 <td style="text-align:left;font-family:monospace;font-size:.8rem;">${c.desc}</td>
+                 <td>${c.count}</td>
+                 <td><span style="background:#e1eff9;padding:.05rem .6rem;border-radius:20px;font-size:.72rem;">${c.type}</span></td>
+                 <td class="acc-cell ${accCellClass(a)}">${a.toFixed(3)} %</td>
+               </tr>`;
+    });
+    html += `</tbody></table></div>`;
+
+    // Diagrama de la opción seleccionada (o la mejor si no hay selección)
+    const shown = selected || best;
+    html += `<div class="diagram-section">
+               <div class="diagram-title">
+                 <span>🔍 Diagrama ${selected ? 'de la opción seleccionada' : 'del mejor resultado'}</span>
+                 <span class="diagram-sub">${fmt(shown.eq)} — ${shown.desc}</span>
+               </div>
+               <div class="diagram-container">
+                 <div class="diagram-box" style="flex:1.2 1 300px;">
+                   <h4>Esquema de conexión</h4>
+                   <div class="network-svg">${networkSVG(shown)}</div>
+                 </div>
+                 <div class="diagram-box" style="flex:2 1 400px;">
+                   <h4>Resistencias individuales (código de colores)</h4>
+                   <div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;width:100%;">`;
+
+    shown.resistors.forEach((r, i) => {
+      const bands = bandsFor(r, tol);
+      html += `<div style="background:#f8fcff;border-radius:14px;padding:.7rem 1rem;
+                          border:1px solid #c9dde9;text-align:center;min-width:150px;">
+                 <div style="font-weight:600;color:#0a3e53;margin-bottom:.2rem;">R${i+1}: ${fmt(r)}</div>
+                 ${resistorSVG(bands)}
+                 <div class="color-code-list" style="margin-top:.5rem;font-size:.72rem;padding:.3rem .5rem;">
+                   ${bands.map((b,bi) => `<span><span class="color-dot" style="background:${b[2]};"></span>${bi<3?'B'+(bi+1):'Tol'} ${b[0]}</span>`).join('')}
+                 </div>
+               </div>`;
+    });
+
+    html += `</div></div></div></div>`;
+    area.innerHTML = html;
+
+    // enganchar clicks de filas
+    area.querySelectorAll('tr.row-opt').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const idx = parseInt(tr.dataset.idx, 10);
+        const c = five[idx];
+        if (!c) return;
+        state.selected = c;
+        renderMain();
+      });
+    });
+  }
+
+  // ---------- progreso ----------
+  function showProgress(text) {
+    const area = document.getElementById('resultArea');
+    area.innerHTML = `
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="pgPhase">${text}</span>
+          <span id="pgPct">0 %</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="pgFill"></div></div>
+      </div>`;
+    area.offsetHeight; // forzar paint
+  }
+  function updateProgress(frac) {
+    const fill = document.getElementById('pgFill');
+    const pct  = document.getElementById('pgPct');
+    if (!fill) return;
+    fill.style.width = (frac * 100).toFixed(1) + '%';
+    if (pct) pct.textContent = (frac * 100).toFixed(0) + ' %';
+  }
+
+  // ---------- evento calcular ----------
+  document.getElementById('calculateBtn').addEventListener('click', function () {
+    const btn = this;
+    const target = parseFloat(document.getElementById('targetInput').value);
+    const tol = parseInt(document.getElementById('toleranceSelect').value, 10);
+    const maxR = parseInt(document.querySelector('input[name="maxRes"]:checked').value, 10);
+
+    if (isNaN(target) || target <= 0) {
+      document.getElementById('resultArea').innerHTML =
+        `<div class="error-msg">❌ Ingresa un valor numérico positivo.</div>`;
+      return;
+    }
+
+    btn.disabled = true;
+    state.selected = null;
+    showProgress('Preparando valores comerciales…');
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const pool = buildPool(tol, target);
+        if (!pool.length) {
+          document.getElementById('resultArea').innerHTML =
+            `<div class="error-msg">❌ No hay valores comerciales en el rango útil.</div>`;
+          btn.disabled = false;
+          return;
+        }
+
+        const t0 = performance.now();
+        searchChunked(
+          pool, target, maxR,
+          (frac) => {
+            const now = performance.now();
+            const elapsed = (now - t0) / 1000;
+            if (frac > 0.01) {
+              const totalEst = elapsed / frac;
+              const remaining = Math.max(0, totalEst - elapsed);
+              const eta = remaining < 0.05 ? '—' : `~${remaining.toFixed(2)} s`;
+              const ph = document.getElementById('pgPhase');
+              if (ph) ph.textContent = `Buscando combinaciones… (${pool.length} valores) ${eta}`;
+            }
+            updateProgress(frac);
+          },
+          ({ best, top }) => {
+            state.target = target; state.tol = tol; state.best = best; state.top = top;
+            state.selected = null;
+            renderMain();
+            const elapsed = ((performance.now() - t0) / 1000).toFixed(3);
+            const area = document.getElementById('resultArea');
+            const foot = document.createElement('div');
+            foot.style.cssText = 'font-size:.72rem;color:#5f7f91;text-align:right;margin-top:.6rem;';
+            foot.textContent = `Procesado en ${elapsed} s · ${pool.length} valores en el pool`;
+            area.appendChild(foot);
+            btn.disabled = false;
+          }
+        );
+      }, 30);
+    });
+  });
+})();
+</script>
+</body>
+</html>
